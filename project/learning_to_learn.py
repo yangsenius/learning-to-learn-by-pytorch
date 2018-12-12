@@ -3,6 +3,7 @@ from cuda import USE_CUDA
 import torch.nn as nn
 from timeit import default_timer as timer
 from  learner import Learner
+
 #######   LSTM 优化器的训练过程 Learning to learn   ###############
 
 def Learning_to_learn_global_training(f,optimizee, global_taining_steps, Optimizee_Train_Steps, UnRoll_STEPS, Evaluate_period ,optimizer_lr):
@@ -34,21 +35,20 @@ def Learning_to_learn_global_training(f,optimizee, global_taining_steps, Optimiz
             _,global_loss = LSTM_Learner(num)   
 
             adam_global_optimizer.zero_grad()
-            # global_loss = global_loss / UnRoll_STEPS # 有必要！
-            
+     
             global_loss.backward() 
        
             adam_global_optimizer.step()
-            # print('xxx',[(z.grad,z.requires_grad) for z in optimizee.lstm.parameters()  ])
+            
             global_loss_list.append(global_loss.detach_())
             time = timer() - start
             print('--> time consuming [{:.4f}s] optimizee train steps :  [{}] | Global_Loss = [{:.1f}]'.format(time,(num +1)* UnRoll_STEPS,global_loss))
 
         if (i + 1) % Evaluate_period == 0:
-            #best_flag = True
+            
             best_sum_loss, best_final_loss, best_flag  = evaluate(f, optimizee,best_sum_loss,best_final_loss,best_flag,optimizer_lr)
             
-    #print(global_loss)
+    
     return global_loss_list,best_flag
 
 
