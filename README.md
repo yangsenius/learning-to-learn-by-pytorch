@@ -7,6 +7,9 @@ A re-implementation by PyTorch
 - For Quadratic experiments
 
 More information in [CSDN](https://blog.csdn.net/senius/article/details/84483329)
+
+The project can be run in the whole project or a python file
+
 # Reference
 
 [1.Learning to learn by gradient descent by gradient descent](https://arxiv.org/abs/1606.04474)
