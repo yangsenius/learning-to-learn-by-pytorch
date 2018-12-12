@@ -6,7 +6,7 @@ A re-implementation by PyTorch
 
 - For Quadratic experiments
 
-More information in [CSDN](https://blog.csdn.net/senius/article/details/84483329)
+More information in my [CSDN](https://blog.csdn.net/senius/article/details/84483329) （中文）
 
 The project can be run in the whole [project](project/) or a [python file](learning_to_learn.py)
 
