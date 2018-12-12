@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from cuda import USE_CUDA
+
 #####################     LSTM 优化器的模型  ##########################
 class LSTM_Optimizee_Model(torch.nn.Module):
     """LSTM优化器"""
@@ -36,9 +37,10 @@ class LSTM_Optimizee_Model(torch.nn.Module):
         return torch.cat((clamp_log,clamp_sign),dim = -1) #在gradients的最后一维input_dims拼接
     
     def Output_Gradient_Increment_And_Update_LSTM_Hidden_State(self, input_gradients, prev_state):
-        """LSTM的核心操作
-        coordinate-wise LSTM """
+        """LSTM的核心操作 coordinate-wise LSTM """
+        
         Layers,batchsize,Hidden_nums = self.Layers, self.batchsize, self.Hidden_nums
+        
         if prev_state is None: #init_state
             prev_state = (torch.zeros(Layers,batchsize,Hidden_nums),
                             torch.zeros(Layers,batchsize,Hidden_nums))
