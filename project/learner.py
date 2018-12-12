@@ -23,7 +23,7 @@ class Learner( object ):
         self.f = f
         self.optimizee = optimizee
         self.train_steps = train_steps
-        #self.num_roll=num_roll
+      
         self.eval_flag = eval_flag
         self.retain_graph_flag = retain_graph_flag
         self.reset_theta = reset_theta
@@ -55,10 +55,10 @@ class Learner( object ):
         reset_theta =self.reset_theta
         reset_function_from_IID_distirbution = self.reset_function_from_IID_distirbution
 
-        #torch.manual_seed(2)
+      
         if num_roll == 0 and reset_theta == True:
             theta = torch.zeros(self.batchsize,self.DIM)
-            #torch.manual_seed(0) ##独立同分布的 标准正太分布
+            ##独立同分布的 标准正太分布
             theta_init_new = torch.tensor(theta,dtype=torch.float32,requires_grad=True)
             x = theta_init_new
             
@@ -67,8 +67,7 @@ class Learner( object ):
         if num_roll == 0 and reset_function_from_IID_distirbution == True :
             W = torch.randn(self.batchsize,self.DIM,self.DIM) #代表 已知的数据 # 独立同分布的标准正太分布
             Y = torch.randn(self.batchsize,self.DIM)     #代表 数据的标签 #  独立同分布的标准正太分布
-            #torch.nn.init.normal_(W)
-            #torch.nn.init.normal_(Y)
+        
             print('reset W and Y ')
         if num_roll == 0:
             state = None
@@ -79,11 +78,10 @@ class Learner( object ):
             Y = Y.cuda()
             x = x.cuda()
             x.retain_grad()
-            #print(x.requires_grad)
+       
             
         return  x , W , Y , state
 
-    #x , W , Y , state = Reset(num_roll,reset_theta,reset_function_from_IID_distirbution)
 
     def __call__(self, num_roll=0) : 
         '''
@@ -95,21 +93,20 @@ class Learner( object ):
         x , W , Y , state =  self.Reset_Or_Reuse(self.x , self.W , self.Y , self.state , num_roll )
         self.global_loss_graph = 0   #每个unroll的开始需要 重新置零
         optimizee = self.optimizee
-        #x.requires_grad = True
+    
         if optimizee!='Adam':
             
             for i in range(self.train_steps):     
                 loss = f(W,Y,x)    
                 #global_loss_graph += torch.exp(torch.Tensor([-i/20]))*loss
                 self.global_loss_graph += (i/20+1)*loss
-                ###self.global_loss_graph += loss
-                #print('############ epoch {} ###############:\n'.format(i))
+              
                 loss.backward(retain_graph=self.retain_graph_flag) # 默认为False,当优化LSTM设置为True
-                #print(i,'qw',x,x.grad,x.requires_grad)
+          
                 update, state = optimizee(x.grad, state)
-                #print(update)
+             
                 self.losses.append(loss)
-                #print(i,'x',x,'u', update)
+          
                 x = x + update  
                 x.retain_grad()
                 update.retain_grad()
