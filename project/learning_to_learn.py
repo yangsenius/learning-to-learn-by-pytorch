@@ -2,7 +2,7 @@ import torch
 from cuda import USE_CUDA
 import torch.nn as nn
 from timeit import default_timer as timer
-from  learner import Learner
+from  learner import Learner
 #######   LSTM 优化器的训练过程 Learning to learn   ###############
 
 def Learning_to_learn_global_training(f,optimizee, global_taining_steps, Optimizee_Train_Steps, UnRoll_STEPS, Evaluate_period ,optimizer_lr):
@@ -18,7 +18,8 @@ def Learning_to_learn_global_training(f,optimizee, global_taining_steps, Optimiz
     Total_Num_Unroll = Optimizee_Train_Steps // UnRoll_STEPS
     adam_global_optimizer = torch.optim.Adam(optimizee.parameters(),lr = optimizer_lr)
 
-    LSTM_Learner = Learner(f, optimizee, UnRoll_STEPS, retain_graph_flag=True, reset_theta=True,reset_function_from_IID_distirbution = False)  #这里考虑Batchsize代表IID的化，那么就可以不需要每次都重新IID采样
+    LSTM_Learner = Learner(f, optimizee, UnRoll_STEPS, retain_graph_flag=True, reset_theta=True,reset_function_from_IID_distirbution = False)
+  #这里考虑Batchsize代表IID的化，那么就可以不需要每次都重新IID采样
 
     best_sum_loss = 999999
     best_final_loss = 999999
@@ -50,7 +51,8 @@ def Learning_to_learn_global_training(f,optimizee, global_taining_steps, Optimiz
     #print(global_loss)
     return global_loss_list,best_flag
 
-def evaluate(f, optimizee, best_sum_loss,best_final_loss, best_flag,lr):
+
+def evaluate(f, optimizee, best_sum_loss,best_final_loss, best_flag,lr):
     print('\n --> evalute the model')
     STEPS = 100
     LSTM_learner = Learner(f , optimizee, STEPS, eval_flag=True,reset_theta=True, retain_graph_flag=True)
