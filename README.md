@@ -2,7 +2,7 @@
 
 Learning to learn by gradient descent by gradient descent
 
-A simple and understandable re-implementation by PyTorch
+A simple re-implementation by PyTorch
 
 - For Quadratic experiments
 
