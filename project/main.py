@@ -6,8 +6,9 @@ from learner import Learner
 from CoordinateWiseLSTM import LSTM_Optimizee_Model
 from learning_to_learn import Learning_to_learn_global_training
 from cuda import USE_CUDA 
+
 #####################      优化问题   ##########################
-def f(W,Y,x):
+def f(W,Y,x):
     """quadratic function : f(\theta) = \|W\theta - y\|_2^2"""
     if USE_CUDA:
         W = W.cuda()
@@ -16,11 +17,10 @@ from cuda import USE_CUDA
 
     return ((torch.matmul(W,x.unsqueeze(-1)).squeeze()-Y)**2).sum(dim=1).mean(dim=0)
 
-
 USE_CUDA = USE_CUDA
 DIM = 10
 batchsize = 128
-
+
 print('\n\nUSE_CUDA = {}\n\n'.format(USE_CUDA))
 
 #################   优化器模型参数  ##############################
