@@ -8,7 +8,7 @@ A re-implementation by PyTorch
 
 More information in [CSDN](https://blog.csdn.net/senius/article/details/84483329)
 
-The project can be run in the whole project or a python file
+The project can be run in the whole [project](project/) or a [python file](learing_to_learn.py)
 
 # Reference
 
