@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from cuda import USE_CUDA
-#####################    自动 LSTM 优化器模型  ##########################
+#####################     LSTM 优化器的模型  ##########################
 class LSTM_Optimizee_Model(torch.nn.Module):
     """LSTM优化器"""
     
