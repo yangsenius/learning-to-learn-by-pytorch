@@ -56,12 +56,12 @@ class LSTM_Optimizee_Model(torch.nn.Module):
         #LSTM的输入为梯度，pytorch要求torch.nn.lstm的输入为（1，batchsize,input_dim）
         #原gradient.size()=torch.size[5] ->[1,1,5]
         gradients = input_gradients.unsqueeze(0)
-        #print('x',gradients)
+      
         if self.preprocess_flag == True:
             gradients = self.LogAndSign_Preprocess_Gradient(gradients)
-        #print('y',gradients)
+       
         update , next_state = self.Output_Gradient_Increment_And_Update_LSTM_Hidden_State(gradients , prev_state)
         # Squeeze to make it a single batch again.[1,1,5]->[5]
         update = update.squeeze().squeeze()
-        #print('zz',update)
+      
         return update , next_state
