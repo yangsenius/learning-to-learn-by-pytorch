@@ -1,4 +1,4 @@
-class LSTM_Optimizer(torch.nn.Module):
+class Simple_LSTM_Optimizer(torch.nn.Module):
 
     def __init__(self, input_dim, hidden_dim, num_stacks, output_dim ,batchsize):
         super(LSTM_Optimizer,self).__init__()
