@@ -1,5 +1,5 @@
 class LSTM_Optimizer(torch.nn.Module):
-    
+
     def __init__(self, input_dim, hidden_dim, num_stacks, output_dim ,batchsize):
         super(LSTM_Optimizer,self).__init__()
         self.batchsize = batchsize
@@ -19,11 +19,8 @@ class LSTM_Optimizer(torch.nn.Module):
 	
         update , (cell,hidden) = self.lstm(input_gradients, (cell, hidden))
         update = self.Linear(update) 
-
         return update, (cell, hidden)
 
     def forward(self,input_gradients, prev_state):
-
-        update , next_state = self.Output_And_Update (input_gradients , prev_state)
-         
+        update , next_state = self.Output_And_Update (input_gradients , prev_state)  
         return update , next_state
