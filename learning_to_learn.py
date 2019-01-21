@@ -22,7 +22,7 @@ batchsize = 128
 
 if torch.cuda.is_available():
     USE_CUDA = True  
-USE_CUDA = False  
+USE_CUDA = False  # for your need
 
 
 print('\n\nUSE_CUDA = {}\n\n'.format(USE_CUDA))
