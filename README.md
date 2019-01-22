@@ -29,7 +29,6 @@ This code is designed for a better understanding and easy implementation of pape
 
 [2. Learning to learn in Tensorflow  by DeepMind](https://github.com/deepmind/learning-to-learn)
 
-[3.learning-to-learn-by-gradient-descent-by-gradient-descent--hackernoon](https://hackernoon.com/learning-to-learn-by-gradient-descent-by-gradient-descent-4da2273d64f2)
 
 
 
