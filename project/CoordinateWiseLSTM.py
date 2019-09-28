@@ -3,11 +3,11 @@ import torch.nn as nn
 from cuda import USE_CUDA
 
 #####################     LSTM 优化器的模型  ##########################
-class LSTM_Optimizee_Model(torch.nn.Module):
+class LSTM_optimizer_Model(torch.nn.Module):
     """LSTM优化器"""
     
     def __init__(self,input_size,output_size, hidden_size, num_stacks, batchsize, preprocess = True ,p = 10 ,output_scale = 1):
-        super(LSTM_Optimizee_Model,self).__init__()
+        super(LSTM_optimizer_Model,self).__init__()
         self.preprocess_flag = preprocess
         self.p = p
         self.input_flag = 2

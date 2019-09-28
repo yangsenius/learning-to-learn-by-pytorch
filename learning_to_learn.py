@@ -64,12 +64,12 @@ def adam():
 
 #####################    自动 LSTM 优化器模型  ##########################
 #####################    auto LSTM optimizer model  ##########################
-class LSTM_Optimizee_Model(torch.nn.Module):
+class LSTM_optimizer_Model(torch.nn.Module):
     """LSTM优化器
        LSTM optimizer"""
     
     def __init__(self,input_size,output_size, hidden_size, num_stacks, batchsize, preprocess = True ,p = 10 ,output_scale = 1):
-        super(LSTM_Optimizee_Model,self).__init__()
+        super(LSTM_optimizer_Model,self).__init__()
         self.preprocess_flag = preprocess
         self.p = p
         self.input_flag = 2
@@ -135,12 +135,12 @@ output_scale_value=1
 
 #######   构造一个优化器  #######
 #######  construct a optimizer  #######
-LSTM_Optimizee = LSTM_Optimizee_Model(Input_DIM, Output_DIM, Hidden_nums ,Layers , batchsize=batchsize,\
+LSTM_optimizer = LSTM_optimizer_Model(Input_DIM, Output_DIM, Hidden_nums ,Layers , batchsize=batchsize,\
                 preprocess=False,output_scale=output_scale_value)
-print(LSTM_Optimizee)
+print(LSTM_optimizer)
 
 if USE_CUDA:
-    LSTM_Optimizee = LSTM_Optimizee.cuda()
+    LSTM_optimizer = LSTM_optimizer.cuda()
    
 
 ######################  优化问题目标函数的学习过程   ###############
@@ -149,8 +149,8 @@ if USE_CUDA:
 class Learner( object ):
     """
     Args :
-        `f` : 要学习的问题 the learning problem
-        `optimizee` : 使用的优化器 the used optimizer 
+        `f` : 要学习的问题 the learning problem, also called `optimizee` in the paper
+        `optimizer` : 使用的优化器 the used optimizer 
         `train_steps` : 对于其他SGD,Adam等是训练周期，对于LSTM训练时的展开周期  training steps for SGD and ADAM, unfolded step for LSTM train
         `retain_graph_flag=False`  : 默认每次loss_backward后 释放动态图 default: free the dynamic graph after the loss backward
         `reset_theta = False `  :  默认每次学习前 不随机初始化参数 default: do not initialize the theta
@@ -160,13 +160,13 @@ class Learner( object ):
         `losses` : reserves each loss value in each iteration
         `global_loss_graph` : constructs the graph of all Unroll steps for LSTM's BPTT 
     """
-    def __init__(self,    f ,   optimizee,  train_steps ,  
+    def __init__(self,    f ,   optimizer,  train_steps ,  
                                             eval_flag = False,
                                             retain_graph_flag=False,
                                             reset_theta = False ,
                                             reset_function_from_IID_distirbution = True):
         self.f = f
-        self.optimizee = optimizee
+        self.optimizer = optimizer
         self.train_steps = train_steps
         #self.num_roll=num_roll
         self.eval_flag = eval_flag
@@ -238,10 +238,10 @@ class Learner( object ):
         f  = self.f 
         x , W , Y , state =  self.Reset_Or_Reuse(self.x , self.W , self.Y , self.state , num_roll )
         self.global_loss_graph = 0   #at the beginning of unroll, reset to 0 
-        optimizee = self.optimizee
+        optimizer = self.optimizer
         print('state is None = {}'.format(state == None))
      
-        if optimizee!='Adam':
+        if optimizer!='Adam':
             
             for i in range(self.train_steps):     
                 loss = f(W,Y,x)
@@ -250,7 +250,7 @@ class Learner( object ):
               
                 loss.backward(retain_graph=self.retain_graph_flag) # default as False,set to True for LSTMS
               
-                update, state = optimizee(x.grad, state)
+                update, state = optimizer(x.grad, state)
               
                 self.losses.append(loss)
              
@@ -267,17 +267,17 @@ class Learner( object ):
 
             x.detach_()
             x.requires_grad = True
-            optimizee= torch.optim.Adam( [x],lr=0.1 )
+            optimizer= torch.optim.Adam( [x],lr=0.1 )
             
             for i in range(self.train_steps):
                 
-                optimizee.zero_grad()
+                optimizer.zero_grad()
                 loss = f(W,Y,x)
                 
                 self.global_loss_graph += loss
                 
                 loss.backward(retain_graph=self.retain_graph_flag)
-                optimizee.step()
+                optimizer.step()
                 self.losses.append(loss.detach_())
                 
             return self.losses, self.global_loss_graph
@@ -286,20 +286,20 @@ class Learner( object ):
 #######   LSTM 优化器的训练过程 Learning to learn   ###############
 #######   LSTM training Learning to learn   ###############
 
-def Learning_to_learn_global_training(optimizee, global_taining_steps, Optimizee_Train_Steps, UnRoll_STEPS, Evaluate_period ,optimizer_lr=0.1):
-    """ Training the LSTM optimizee . Learning to learn
+def Learning_to_learn_global_training(optimizer, global_taining_steps, optimizer_Train_Steps, UnRoll_STEPS, Evaluate_period ,optimizer_lr=0.1):
+    """ Training the LSTM optimizer . Learning to learn
 
     Args:   
-        `optimizee` : DeepLSTMCoordinateWise optimizee model
+        `optimizer` : DeepLSTMCoordinateWise optimizer model
         `global_taining_steps` : how many steps for optimizer training o可以ptimizee
-        `Optimizee_Train_Steps` : how many step for optimizee opimitzing each function sampled from IID.
-        `UnRoll_STEPS` :: how many steps for LSTM optimizee being unrolled to construct a computing graph to BPTT.
+        `optimizer_Train_Steps` : how many step for optimizer opimitzing each function sampled from IID.
+        `UnRoll_STEPS` :: how many steps for LSTM optimizer being unrolled to construct a computing graph to BPTT.
     """
     global_loss_list = []
-    Total_Num_Unroll = Optimizee_Train_Steps // UnRoll_STEPS
-    adam_global_optimizer = torch.optim.Adam(optimizee.parameters(),lr = optimizer_lr)
+    Total_Num_Unroll = optimizer_Train_Steps // UnRoll_STEPS
+    adam_global_optimizer = torch.optim.Adam(optimizer.parameters(),lr = optimizer_lr)
 
-    LSTM_Learner = Learner(f, optimizee, UnRoll_STEPS, retain_graph_flag=True, reset_theta=True,)
+    LSTM_Learner = Learner(f, optimizer, UnRoll_STEPS, retain_graph_flag=True, reset_theta=True,)
   #这里考虑Batchsize代表IID的话，那么就可以不需要每次都重新IID采样
   # If regarding `Batchsize` as `IID` ,there is no need for reset the theta
   #That is ，reset_function_from_IID_distirbution = False else it is True
@@ -320,11 +320,11 @@ def Learning_to_learn_global_training(optimizee, global_taining_steps, Optimizee
             global_loss.backward() 
        
             adam_global_optimizer.step()
-            # print('xxx',[(z.grad,z.requires_grad) for z in optimizee.lstm.parameters()  ])
+            # print('xxx',[(z.grad,z.requires_grad) for z in optimizer.lstm.parameters()  ])
             global_loss_list.append(global_loss.detach_())
             time = timer() - start
             #if i % 10 == 0:
-            print('-> time consuming [{:.1f}s] optimizee train steps :  [{}] | Global_Loss = [{:.1f}] '\
+            print('-> time consuming [{:.1f}s] optimizer train steps :  [{}] | Global_Loss = [{:.1f}] '\
                   .format(time,(num +1)* UnRoll_STEPS,global_loss,))
 
         if (i + 1) % Evaluate_period == 0:
@@ -337,7 +337,7 @@ def Learning_to_learn_global_training(optimizee, global_taining_steps, Optimizee
 def evaluate(best_sum_loss,best_final_loss, best_flag,lr):
     print('\n --> evalute the model')
     STEPS = 100
-    LSTM_learner = Learner(f , LSTM_Optimizee, STEPS, eval_flag=True,reset_theta=True, retain_graph_flag=True)
+    LSTM_learner = Learner(f , LSTM_optimizer, STEPS, eval_flag=True,reset_theta=True, retain_graph_flag=True)
     lstm_losses, sum_loss = LSTM_learner()
     try:
         best = torch.load('best_loss.txt')
@@ -353,14 +353,14 @@ def evaluate(best_sum_loss,best_final_loss, best_flag,lr):
         best_sum_loss =  sum_loss
         
         print('\n\n===> update new best of final LOSS[{}]: =  {}, best_sum_loss ={}'.format(STEPS, best_final_loss,best_sum_loss))
-        torch.save(LSTM_Optimizee.state_dict(),'best_LSTM_optimizer.pth')
+        torch.save(LSTM_optimizer.state_dict(),'best_LSTM_optimizer.pth')
         torch.save([best_sum_loss ,best_final_loss,lr ],'best_loss.txt')
         best_flag = True
         
     return best_sum_loss, best_final_loss, best_flag 
 
     
-##########################   before learning LSTM optimizee ###############################
+##########################   before learning LSTM optimizer ###############################
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -375,7 +375,7 @@ for _ in range(1):
     SGD_Learner = Learner(f , SGD, STEPS, eval_flag=True,reset_theta=True,)
     RMS_Learner = Learner(f , RMS, STEPS, eval_flag=True,reset_theta=True,)
     Adam_Learner = Learner(f , Adam, STEPS, eval_flag=True,reset_theta=True,)
-    LSTM_learner = Learner(f , LSTM_Optimizee, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
+    LSTM_learner = Learner(f , LSTM_optimizer, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
 
     sgd_losses, sgd_sum_loss = SGD_Learner()
     rms_losses, rms_sum_loss = RMS_Learner()
@@ -397,15 +397,15 @@ for _ in range(1):
 
 
 
-#################### Learning to learn (optimizing optimizee) ######################
+#################### Learning to learn (optimizing optimizer) ######################
 Global_Train_Steps = 1000 #可修改 changeable
-Optimizee_Train_Steps = 100
+optimizer_Train_Steps = 100
 UnRoll_STEPS = 20
 Evaluate_period = 1 #可修改 changeable
 optimizer_lr = 0.1 #可修改 changeable
-global_loss_list ,flag = Learning_to_learn_global_training(   LSTM_Optimizee,
+global_loss_list ,flag = Learning_to_learn_global_training(   LSTM_optimizer,
                                                         Global_Train_Steps,
-                                                        Optimizee_Train_Steps,
+                                                        optimizer_Train_Steps,
                                                         UnRoll_STEPS,
                                                         Evaluate_period,
                                                           optimizer_lr)
@@ -421,7 +421,7 @@ global_loss_list ,flag = Learning_to_learn_global_training(   LSTM_Optimizee,
 #Global_T = np.arange(len(global_loss_list))
 #p1, = plt.plot(Global_T, global_loss_list, label='Global_graph_loss')
 #plt.legend(handles=[p1])
-#plt.title('Training LSTM optimizee by gradient descent ')
+#plt.title('Training LSTM optimizer by gradient descent ')
 #plt.show()
 
 
@@ -434,12 +434,12 @@ import matplotlib.pyplot as plt
 
 if flag ==True :
     print('\n==== > load best LSTM model')
-    last_state_dict = copy.deepcopy(LSTM_Optimizee.state_dict())
-    torch.save(LSTM_Optimizee.state_dict(),'final_LSTM_optimizer.pth')
-    LSTM_Optimizee.load_state_dict( torch.load('best_LSTM_optimizer.pth'))
+    last_state_dict = copy.deepcopy(LSTM_optimizer.state_dict())
+    torch.save(LSTM_optimizer.state_dict(),'final_LSTM_optimizer.pth')
+    LSTM_optimizer.load_state_dict( torch.load('best_LSTM_optimizer.pth'))
     
-LSTM_Optimizee.load_state_dict(torch.load('best_LSTM_optimizer.pth'))
-#LSTM_Optimizee.load_state_dict(torch.load('final_LSTM_optimizer.pth'))
+LSTM_optimizer.load_state_dict(torch.load('best_LSTM_optimizer.pth'))
+#LSTM_optimizer.load_state_dict(torch.load('final_LSTM_optimizer.pth'))
 STEPS = 100
 x = np.arange(STEPS)
 
@@ -450,7 +450,7 @@ for _ in range(3): #可以多试几次测试实验，LSTM不稳定 for several t
     SGD_Learner = Learner(f , SGD, STEPS, eval_flag=True,reset_theta=True,)
     RMS_Learner = Learner(f , RMS, STEPS, eval_flag=True,reset_theta=True,)
     Adam_Learner = Learner(f , Adam, STEPS, eval_flag=True,reset_theta=True,)
-    LSTM_learner = Learner(f , LSTM_Optimizee, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
+    LSTM_learner = Learner(f , LSTM_optimizer, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
 
     
     sgd_losses, sgd_sum_loss = SGD_Learner()

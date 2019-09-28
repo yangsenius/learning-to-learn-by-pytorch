@@ -3,7 +3,7 @@ import torch.nn as nn
 from timeit import default_timer as timer
 from optim import SGD, RMS, adam
 from learner import Learner
-from CoordinateWiseLSTM import LSTM_Optimizee_Model
+from CoordinateWiseLSTM import LSTM_optimizer_Model
 from learning_to_learn import Learning_to_learn_global_training
 from cuda import USE_CUDA 
 
@@ -31,33 +31,33 @@ Output_DIM = DIM
 output_scale_value=1
 
 #######   构造一个优化器  #######
-LSTM_Optimizee = LSTM_Optimizee_Model(Input_DIM, Output_DIM, Hidden_nums ,Layers , batchsize=batchsize,\
+LSTM_optimizer = LSTM_optimizer_Model(Input_DIM, Output_DIM, Hidden_nums ,Layers , batchsize=batchsize,\
                 preprocess=False,output_scale=output_scale_value)
-print(LSTM_Optimizee)
+print(LSTM_optimizer)
 
 if USE_CUDA:
-    LSTM_Optimizee = LSTM_Optimizee.cuda()
+    LSTM_optimizer = LSTM_optimizer.cuda()
 
 
 
-#################### Learning to learn (优化optimizee) ######################
+#################### Learning to learn (优化optimizer) ######################
 Global_Train_Steps = 2000
-Optimizee_Train_Steps = 100
+optimizer_Train_Steps = 100
 UnRoll_STEPS = 20
 Evaluate_period = 1
 optimizer_lr = 0.1
 
-global_loss_list ,flag = Learning_to_learn_global_training(  f, LSTM_Optimizee,
+global_loss_list ,flag = Learning_to_learn_global_training(  f, LSTM_optimizer,
                                                         Global_Train_Steps,
-                                                        Optimizee_Train_Steps,
+                                                        optimizer_Train_Steps,
                                                         UnRoll_STEPS,
                                                         Evaluate_period,
                                                         optimizer_lr)
 
 if flag ==True :
     print('\n=== > load best LSTM model')
-    torch.save(LSTM_Optimizee.state_dict(),'final_LSTM_optimizer.pth')
-    LSTM_Optimizee.load_state_dict( torch.load('best_LSTM_optimizer.pth'))
+    torch.save(LSTM_optimizer.state_dict(),'final_LSTM_optimizer.pth')
+    LSTM_optimizer.load_state_dict( torch.load('best_LSTM_optimizer.pth'))
 
 
 
@@ -72,7 +72,7 @@ import matplotlib.pyplot as plt
 #Global_T = np.arange(len(global_loss_list))
 #p1, = plt.plot(Global_T, global_loss_list, label='Global_graph_loss')
 #plt.legend(handles=[p1])
-#plt.title('Training LSTM optimizee by gradient descent ')
+#plt.title('Training LSTM optimizer by gradient descent ')
 #plt.show()
 
 
@@ -86,7 +86,7 @@ for _ in range(3):
     SGD_Learner = Learner(f , SGD, STEPS, eval_flag=True,reset_theta=True,)
     RMS_Learner = Learner(f , RMS, STEPS, eval_flag=True,reset_theta=True,)
     Adam_Learner = Learner(f , Adam, STEPS, eval_flag=True,reset_theta=True,)
-    LSTM_learner = Learner(f , LSTM_Optimizee, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
+    LSTM_learner = Learner(f , LSTM_optimizer, STEPS, eval_flag=True,reset_theta=True,retain_graph_flag=True)
 
     sgd_losses, sgd_sum_loss = SGD_Learner()
     rms_losses, rms_sum_loss = RMS_Learner()

@@ -5,7 +5,7 @@ class Learner( object ):
     """
     Args :
         `f` : 要学习的问题
-        `optimizee` : 使用的优化器
+        `optimizer` : 使用的优化器
         `train_steps` : 对于其他SGD,Adam等是训练周期，对于LSTM训练时的展开周期
         `retain_graph_flag=False`  : 默认每次loss_backward后 释放动态图
         `reset_theta = False `  :  默认每次学习前 不随机初始化参数
@@ -15,13 +15,13 @@ class Learner( object ):
         `losses` : reserves each loss value in each iteration
         `global_loss_graph` : constructs the graph of all Unroll steps for LSTM's BPTT 
     """
-    def __init__(self,    f ,   optimizee,  train_steps ,  
+    def __init__(self,    f ,   optimizer,  train_steps ,  
                                             eval_flag = False,
                                             retain_graph_flag=False,
                                             reset_theta = False ,
                                             reset_function_from_IID_distirbution = True):
         self.f = f
-        self.optimizee = optimizee
+        self.optimizer = optimizer
         self.train_steps = train_steps
       
         self.eval_flag = eval_flag
@@ -92,9 +92,9 @@ class Learner( object ):
         f  = self.f 
         x , W , Y , state =  self.Reset_Or_Reuse(self.x , self.W , self.Y , self.state , num_roll )
         self.global_loss_graph = 0   #每个unroll的开始需要 重新置零
-        optimizee = self.optimizee
+        optimizer = self.optimizer
     
-        if optimizee!='Adam':
+        if optimizer!='Adam':
             
             for i in range(self.train_steps):     
                 loss = f(W,Y,x)    
@@ -103,7 +103,7 @@ class Learner( object ):
               
                 loss.backward(retain_graph=self.retain_graph_flag) # 默认为False,当优化LSTM设置为True
           
-                update, state = optimizee(x.grad, state)
+                update, state = optimizer(x.grad, state)
              
                 self.losses.append(loss)
           
@@ -118,17 +118,17 @@ class Learner( object ):
 
             x.detach_()
             x.requires_grad = True
-            optimizee= torch.optim.Adam( [x],lr=0.1 )
+            optimizer= torch.optim.Adam( [x],lr=0.1 )
             
             for i in range(self.train_steps):
                 
-                optimizee.zero_grad()
+                optimizer.zero_grad()
                 loss = f(W,Y,x)
                 
                 self.global_loss_graph += loss
                 
                 loss.backward(retain_graph=self.retain_graph_flag)
-                optimizee.step()
+                optimizer.step()
                 self.losses.append(loss.detach_())
                 
             return self.losses, self.global_loss_graph
