@@ -361,6 +361,8 @@ def evaluate(best_sum_loss,best_final_loss, best_flag,lr):
         best = torch.load('best_loss.txt')
     except IOError:
         print ('can not find best_loss.txt')
+        now_sum_loss = lstm_sum_loss.cpu()
+        now_final_loss = lstm_losses[-1].cpu()
         pass
     else:
         best_sum_loss = best[0].cpu()
