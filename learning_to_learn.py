@@ -22,8 +22,6 @@ batchsize = 128
 
 if torch.cuda.is_available():
     USE_CUDA = True  
-USE_CUDA = False  # for your need
-
 
 print('\n\nUSE_CUDA = {}\n\n'.format(USE_CUDA))
  
@@ -115,10 +113,8 @@ class LSTM_optimizer_Model(torch.nn.Module):
         #pytorch requires the `torch.nn.lstm`'s input as（1，batchsize,input_dim）
         # original gradient.size()=torch.size[5] ->[1,1,5]
         gradients = input_gradients.unsqueeze(0)
-      
         if self.preprocess_flag == True:
             gradients = self.LogAndSign_Preprocess_Gradient(gradients)
-      
         update , next_state = self.Output_Gradient_Increment_And_Update_LSTM_Hidden_State(gradients , prev_state)
         # Squeeze to make it a single batch again.[1,1,5]->[5]
         update = update.squeeze().squeeze()
@@ -204,8 +200,7 @@ class Learner( object ):
        
         if num_roll == 0 and reset_theta == True:
             theta = torch.zeros(batchsize,DIM)
-           
-            theta_init_new = torch.tensor(theta,dtype=torch.float32,requires_grad=True)
+            theta_init_new =  theta.clone().detach().requires_grad_(True)
             x = theta_init_new
             
             
@@ -218,7 +213,7 @@ class Learner( object ):
             
         if num_roll == 0:
             state = None
-            print('reset W, x , Y, state ')
+            print('reset the values of `W`, `x`, `Y` and `state` for this optimizer')
             
         if USE_CUDA:
             W = W.cuda()
@@ -239,7 +234,6 @@ class Learner( object ):
         x , W , Y , state =  self.Reset_Or_Reuse(self.x , self.W , self.Y , self.state , num_roll )
         self.global_loss_graph = 0   #at the beginning of unroll, reset to 0 
         optimizer = self.optimizer
-        print('state is None = {}'.format(state == None))
      
         if optimizer!='Adam':
             
@@ -249,9 +243,7 @@ class Learner( object ):
                 self.global_loss_graph += loss
               
                 loss.backward(retain_graph=self.retain_graph_flag) # default as False,set to True for LSTMS
-              
-                update, state = optimizer(x.grad, state)
-              
+                update, state = optimizer(x.grad.clone().detach(), state)
                 self.losses.append(loss)
              
                 x = x + update  
@@ -309,7 +301,7 @@ def Learning_to_learn_global_training(optimizer, global_taining_steps, optimizer
     best_flag = False
     for i in range(Global_Train_Steps): 
 
-        print('\n=======> global training steps: {}'.format(i))
+        print('\n========================================> global training steps: {}'.format(i))
 
         for num in range(Total_Num_Unroll):
             
@@ -324,33 +316,67 @@ def Learning_to_learn_global_training(optimizer, global_taining_steps, optimizer
             global_loss_list.append(global_loss.detach_())
             time = timer() - start
             #if i % 10 == 0:
-            print('-> time consuming [{:.1f}s] optimizer train steps :  [{}] | Global_Loss = [{:.1f}] '\
+            print('-> time consuming [{:.1f}s] optimizer train steps :  [{}] | Global_Loss = [{:.1f}]  '\
                   .format(time,(num +1)* UnRoll_STEPS,global_loss,))
 
         if (i + 1) % Evaluate_period == 0:
             
             best_sum_loss, best_final_loss, best_flag  = evaluate(best_sum_loss,best_final_loss,best_flag , optimizer_lr)
-
     return global_loss_list,best_flag
 
 
 def evaluate(best_sum_loss,best_final_loss, best_flag,lr):
-    print('\n --> evalute the model')
+    print('\n --------> evalute the model')
+
     STEPS = 100
+    x = np.arange(STEPS)
+    Adam = 'Adam'
+
     LSTM_learner = Learner(f , LSTM_optimizer, STEPS, eval_flag=True,reset_theta=True, retain_graph_flag=True)
-    lstm_losses, sum_loss = LSTM_learner()
+    
+    SGD_Learner = Learner(f , SGD, STEPS, eval_flag=True,reset_theta=True,)
+    RMS_Learner = Learner(f , RMS, STEPS, eval_flag=True,reset_theta=True,)
+    Adam_Learner = Learner(f , Adam, STEPS, eval_flag=True,reset_theta=True,)
+
+
+    sgd_losses, sgd_sum_loss = SGD_Learner()
+    rms_losses, rms_sum_loss = RMS_Learner()
+    adam_losses, adam_sum_loss = Adam_Learner()
+    lstm_losses, lstm_sum_loss = LSTM_learner()
+
+    p1, = plt.plot(x, sgd_losses, label='SGD')
+    p2, = plt.plot(x, rms_losses, label='RMS')
+    p3, = plt.plot(x, adam_losses, label='Adam')
+    p4, = plt.plot(x, lstm_losses, label='LSTM')
+    plt.yscale('log')
+    plt.legend(handles=[p1, p2, p3, p4])
+    plt.title('Losses')
+    plt.pause(1.5)
+    #plt.show()
+    print("sum_loss:sgd={},rms={},adam={},lstm={}".format(sgd_sum_loss,rms_sum_loss,adam_sum_loss,lstm_sum_loss ))
+    plt.close() 
+    torch.save(LSTM_optimizer.state_dict(),'current_LSTM_optimizer_ckpt.pth')
+
     try:
         best = torch.load('best_loss.txt')
     except IOError:
         print ('can not find best_loss.txt')
         pass
     else:
-        best_sum_loss = best[0]
-        best_final_loss = best[1]
-        print("load_best_final_loss and sum_loss")
-    if lstm_losses[-1] < best_final_loss and  sum_loss < best_sum_loss:
-        best_final_loss = lstm_losses[-1]
-        best_sum_loss =  sum_loss
+        best_sum_loss = best[0].cpu()
+        best_final_loss = best[1].cpu()
+        now_sum_loss = lstm_sum_loss.cpu()
+        now_final_loss = lstm_losses[-1].cpu()
+
+        print(" ==> History: sum loss = [{:.1f}] \t| final loss = [{:.2f}]".format(best_sum_loss,best_final_loss))
+        print(" ==> Current: sum loss = [{:.1f}] \t| final loss = [{:.2f}]".format(now_sum_loss,now_final_loss))
+
+    # save the best model according to the conditions below
+    # there may be several choices to make a trade-off
+    if now_final_loss < best_final_loss: # and  now_sum_loss < best_sum_loss:
+        
+        best_final_loss = now_final_loss
+        best_sum_loss =  now_sum_loss 
         
         print('\n\n===> update new best of final LOSS[{}]: =  {}, best_sum_loss ={}'.format(STEPS, best_final_loss,best_sum_loss))
         torch.save(LSTM_optimizer.state_dict(),'best_LSTM_optimizer.pth')
@@ -392,7 +418,7 @@ for _ in range(1):
     plt.yscale('log')
     plt.legend(handles=[p1, p2, p3, p4])
     plt.title('Losses')
-    plt.show()
+    plt.pause(2.5)
     print("\n\nsum_loss:sgd={},rms={},adam={},lstm={}".format(sgd_sum_loss,rms_sum_loss,adam_sum_loss,lstm_sum_loss ))
 
 

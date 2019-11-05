@@ -9,19 +9,17 @@ A simple re-implementation by `PyTorch-1.0`
 - [ ] For CIFAR10
 - [ ] For Neural Art
 
+Add:
 
-The project can be run in the whole [project](project/) or a [python file](learning_to_learn.py)
+- [x] Viusalize the learning process of LSTM optimizer.
+
+The project can be run by this [python file](learning_to_learn.py). 
 
 ```
 python learning_to_learn.py
 ```
-or
 
-```
-python project/main.py 
-```
-
-This code is designed for a better understanding and easy implementation of paper `Learning to learn by gradient descent by gradient descent`
+This code is designed for a better understanding and easy implementation of paper `Learning to learn by gradient descent by gradient descent`.
 
 # Reference
 
